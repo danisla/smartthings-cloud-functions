@@ -62,7 +62,7 @@ gcloud kms keys create accessToken --purpose=encryption --location global --keyr
 Encrypt the token:
 
 ```
-TOKEN_ENC=$(echo -n "stfn-access-token" | ./encrypt_cmd.sh)
+TOKEN_ENC=$(echo -n "cmdexec-access-token" | ./encrypt_cmd.sh)
 ```
 
 Test the decryption:
@@ -71,7 +71,7 @@ Test the decryption:
 echo -n "${TOKEN_ENC}" | ./decrypt_cmd.sh
 ```
 
-> The output should be `stfn-access-token`
+> The output should be `cmdexec-access-token`
 
 Encrypt the on and off commands to execute:
 
@@ -83,7 +83,7 @@ OFF_CMD_ENC=$(echo -n 'echo "Turning OFF"' | ./encrypt_cmd.sh)
 Save the encrypted commands to the `commands.json` file read by the Cloud Function:
 
 ```
-echo "{}" | jq '.on_cmd="'${ON_CMD_ENC}'" | .off_cmd="'${OFF_CMD_ENC}'"' > ./cloud_function/commands.json
+echo "{}" | jq '.on="'${ON_CMD_ENC}'" | .off="'${OFF_CMD_ENC}'"' > ./cloud_function/commands.json
 ```
 
 ### Deploy the Cloud Function
@@ -97,17 +97,17 @@ echo "{}" | jq '.on_cmd="'${ON_CMD_ENC}'" | .off_cmd="'${OFF_CMD_ENC}'"' > ./clo
 ```
 GOOGLE_PROJECT=$(gcloud config get-value project)
 
-curl -X POST -w "%{http_code}\n" https://us-central1-${GOOGLE_PROJECT}.cloudfunctions.net/stFn1 -H "Content-Type: application/json" -d '{"token": "'${TOKEN_ENC}'", "cmd": "ON"}'
+curl -X POST -w "%{http_code}\n" https://us-central1-${GOOGLE_PROJECT}.cloudfunctions.net/cmdExec -H "Content-Type: application/json" -d '{"token": "'${TOKEN_ENC}'", "cmd": "on"}'
 
-curl -X POST -w "%{http_code}\n" https://us-central1-${GOOGLE_PROJECT}.cloudfunctions.net/stFn1 -H "Content-Type: application/json" -d '{"token": "'${TOKEN_ENC}'", "cmd": "OFF"}'
+curl -X POST -w "%{http_code}\n" https://us-central1-${GOOGLE_PROJECT}.cloudfunctions.net/cmdExec -H "Content-Type: application/json" -d '{"token": "'${TOKEN_ENC}'", "cmd": "off"}'
 ```
 
 ### Viewing the Cloud Function Logs
 
-To get logs for the function `stFn`:
+To get logs for the function `cmdExec`:
 
 ```
-gcloud beta functions logs read stFn1
+gcloud beta functions logs read cmdExec
 ```
 
 ## SmartThings device type deployment
@@ -135,9 +135,10 @@ Create a new device with the custom device type from the web UI:
 Add the preferences to the new device:
 
 1. Click the "edit" button next to "Preferences"
-2. Enter the URL of the cloud function: `https://us-central1-${GOOGLE_PROJECT}.cloudfunctions.net/stFn1` (replace `${GOOGLE_PROJECT}` with your project id.)
+2. Enter the URL of the cloud function: `https://us-central1-${GOOGLE_PROJECT}.cloudfunctions.net/cmdExec` (replace `${GOOGLE_PROJECT}` with your project id.)
 3. Enter the value `$TOKEN_ENC` into the "Encrypted access token" field.
-4. Click "Save"
+4. Enter the names of the on and off commands.
+5. Click "Save"
 
 ### Test the SmartThings device
 
@@ -148,7 +149,7 @@ Toggle the switch on/off and verify the cloud function is executed.
 Get the cloud function logs: 
 
 ```
-gcloud beta functions logs read stFn1
+gcloud beta functions logs read cmdExec
 ```
 
 Get the SmartThings logs by clicking on the "Live Logging" link at the top of the web UI.
@@ -182,11 +183,11 @@ functions start
 Deploy the function to the emulator:
 
 ```
-functions deploy stFn1 --trigger-http
+functions deploy cmdExec --trigger-http
 ```
 
 Call the function:
 
 ```
-functions call stFn1 --data '{"token": "'${TOKEN_ENC}'", "cmd": "'${ON_CMD_ENC}'"}'
+functions call cmdExec --data '{"token": "'${TOKEN_ENC}'", "cmd": "on"}'
 ```

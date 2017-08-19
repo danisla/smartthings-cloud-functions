@@ -64,7 +64,7 @@ const decryptData = function(dataEnc, cb) {
     });
 }
 
-exports.stFn1 = function (req, res) {
+exports.cmdExec = function (req, res) {
     if (req.body.token === undefined) {
         res.status(400).send('No token defined!');
         return
@@ -79,7 +79,7 @@ exports.stFn1 = function (req, res) {
 
         console.log(`Access token decrypted: '${token}'`);
 
-        if (token != "stfn-access-token") {
+        if (token != "cmdexec-access-token") {
             res.status(403).send("Unauthorized");
             return;
         }
@@ -90,7 +90,7 @@ exports.stFn1 = function (req, res) {
             // This is an error case, as "message" is required
             res.status(400).send('No cmd defined!');
         } else {
-            const req_cmd = req.body.cmd.toLowerCase();
+            const req_cmd = req.body.cmd;
             var decrypt = true;
             var cmd = decryptedCache[req_cmd];
 
@@ -114,8 +114,15 @@ exports.stFn1 = function (req, res) {
 
                 return;
             }
+            
+            if (! req_cmd in commands) {
+                res.status(400).send(`Invalid command: '${req_cmd}'`);
+                return;
+            }
 
-            const cmd_enc = req_cmd == "on" ? commands.on_cmd : commands.off_cmd;
+            // Get the encrypted command from the module by name.
+            const cmd_enc = commands[req_cmd];
+
             // Decrypt the command
             decryptData(cmd_enc, (err, cmd) => {
                 if (err != null) {

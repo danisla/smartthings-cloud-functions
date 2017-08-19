@@ -1,6 +1,8 @@
 preferences {
     input("cloudFnUrl", "text", title: "Cloud Function URL")
 	input("cloudFnToken", "text", title: "Encrypted access token")
+	input("cloudFnOnCmd", "text", title: "Command name for ON")
+	input("cloudFnOffCmd", "text", title: "Command name for OFF")
 }
  
  // for the UI
@@ -27,22 +29,22 @@ def parse(String description) {
 }
 
 def on() {
-	gcf 'ON'
+	gcf cloudFnOnCmd
     sendEvent(name: 'switch', value: 'on')
 }
 
 def off() {
-	gcf 'OFF'
+	gcf cloudFnOffCmd
     sendEvent(name: 'switch', value: 'off')
 }
 
-private gcf(state) {
+private gcf(cmd) {
     // Cloud Function call
 	httpPost(
 		uri: cloudFnUrl,
         body: [
 			token: cloudFnToken,
-			cmd: state
+			cmd: cmd
 		],
 	) {response -> log.debug (response.data)}
 }
